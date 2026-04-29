@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0c0a14" />
+    <meta
+      name="description"
+      content="CryptoCanvas — a frontend playground for encoding, decoding, hashing, encrypting, signing, and key generation. Educational use only."
+    />
+    <title>CryptoCanvas — Encode, Decrypt, Sign, Generate</title>
+    <script>
+      ;(function () {
+        try {
+          var t = localStorage.getItem('cryptocanvas-theme')
+          var prefersLight =
+            window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+          var dark = t ? t === 'dark' : !prefersLight
+          document.documentElement.classList.toggle('dark', dark)
+        } catch (e) {
+          // ignore
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
