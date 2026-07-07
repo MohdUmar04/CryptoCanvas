@@ -32,6 +32,12 @@ const TOOL_COMPONENTS: Record<string, ComponentType> = {
   rot: lazy(() =>
     import('@/components/tools/encoders/RotTool').then((m) => ({ default: m.RotTool })),
   ),
+  time: lazy(() =>
+    import('@/components/tools/time/TimeTool').then((m) => ({ default: m.TimeTool })),
+  ),
+  uuid: lazy(() =>
+    import('@/components/tools/time/UuidTool').then((m) => ({ default: m.UuidTool })),
+  ),
   caesar: lazy(() =>
     import('@/components/tools/ciphers/CaesarTool').then((m) => ({ default: m.CaesarTool })),
   ),
@@ -47,6 +53,9 @@ const TOOL_COMPONENTS: Record<string, ComponentType> = {
   hmac: lazy(() =>
     import('@/components/tools/hashing/HmacTool').then((m) => ({ default: m.HmacTool })),
   ),
+  kdf: lazy(() =>
+    import('@/components/tools/hashing/KdfTool').then((m) => ({ default: m.KdfTool })),
+  ),
   aes: lazy(() =>
     import('@/components/tools/symmetric/AesTool').then((m) => ({ default: m.AesTool })),
   ),
@@ -55,6 +64,11 @@ const TOOL_COMPONENTS: Record<string, ComponentType> = {
   ),
   ecdsa: lazy(() =>
     import('@/components/tools/asymmetric/EcdsaTool').then((m) => ({ default: m.EcdsaTool })),
+  ),
+  dh: lazy(() =>
+    import('@/components/tools/asymmetric/DiffieHellmanTool').then((m) => ({
+      default: m.DiffieHellmanTool,
+    })),
   ),
   jwt: lazy(() =>
     import('@/components/tools/tokens/JwtTool').then((m) => ({ default: m.JwtTool })),

@@ -30,6 +30,7 @@ import {
 } from '@/lib/asymmetric'
 import type { Status } from '@/lib/types'
 import { KeyDisplay } from './KeyDisplay'
+import { RsaToyPanel } from './RsaToyPanel'
 
 export function RsaTool() {
   const tool = getToolById('rsa')!
@@ -133,6 +134,8 @@ export function RsaTool() {
 
       {keypair && purpose === 'encrypt' && <EncryptPanel keypair={keypair} />}
       {keypair && purpose === 'sign' && <SignPanel keypair={keypair} />}
+
+      <RsaToyPanel />
     </ToolShell>
   )
 }

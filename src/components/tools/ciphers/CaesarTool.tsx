@@ -1,26 +1,37 @@
+import { Wand2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { CopyButton } from '@/components/common/CopyButton'
 import { StepStrip, type Step } from '@/components/common/StepStrip'
 import { ToolPane } from '@/components/common/ToolPane'
 import { ToolShell } from '@/components/common/ToolShell'
+import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { getToolById } from '@/data/tools'
+import { useQueryState } from '@/hooks/useQueryState'
 import { caesar, caesarSteps } from '@/lib/ciphers/caesar'
+import { LETTERS, rankShifts } from '@/lib/ciphers/frequency'
+import { cn } from '@/lib/utils'
 import { AlphabetWheel } from './AlphabetWheel'
+import { FrequencyChart } from './FrequencyChart'
 
 const STEP_LIMIT = 60
 
 export function CaesarTool() {
   const tool = getToolById('caesar')!
-  const [text, setText] = useState('THE QUICK BROWN FOX')
-  const [shift, setShift] = useState(3)
+  const [text, setText] = useQueryState('in', 'THE QUICK BROWN FOX')
+  const [shiftStr, setShiftStr] = useQueryState('shift', '3')
   const [mode, setMode] = useState<'encrypt' | 'decrypt'>('encrypt')
+  const shift = Math.min(Math.max(parseInt(shiftStr, 10) || 0, 0), 25)
 
   const result = useMemo(() => caesar(text, shift, mode), [text, shift, mode])
   const steps = useMemo(() => caesarSteps(text, shift, mode).slice(0, STEP_LIMIT), [text, shift, mode])
+
+  // Rank all 26 shifts by how English-like the decryption looks.
+  const ranked = useMemo(() => rankShifts(text), [text])
+  const bestGuess = ranked[0]
 
   const highlighted = useMemo(() => {
     const set = new Set<string>()
@@ -38,9 +49,16 @@ export function CaesarTool() {
     highlight: s.shift === null ? 'muted' : 'success',
   }))
 
+  const applyGuess = () => {
+    if (!bestGuess) return
+    setMode('decrypt')
+    setShiftStr(String(bestGuess.shift))
+  }
+
   return (
     <ToolShell
       tool={tool}
+      shareable
       explanation={
         <>
           <p>
@@ -49,8 +67,10 @@ export function CaesarTool() {
             characters pass through untouched.
           </p>
           <p>
-            With only 26 possible shifts, brute force is trivial — try each shift and see which
-            one looks like English. That's why Caesar is mostly a teaching tool today.
+            With only 26 possible shifts, brute force is trivial — but you don't even need to try
+            them all by eye. <strong>Frequency analysis</strong> compares the letter counts of the
+            ciphertext against English (E, T, A are most common) and scores each shift with a
+            chi-squared test. The lowest score is almost always the right key.
           </p>
         </>
       }
@@ -72,12 +92,12 @@ export function CaesarTool() {
             max={25}
             step={1}
             value={[shift]}
-            onValueChange={(v) => setShift(v[0])}
+            onValueChange={(v) => setShiftStr(String(v[0]))}
           />
         </div>
       </ToolPane>
 
-      <ToolPane title="Plaintext" actions={text ? <CopyButton text={text} iconOnly /> : null}>
+      <ToolPane title="Text" actions={text ? <CopyButton text={text} iconOnly /> : null}>
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -95,6 +115,64 @@ export function CaesarTool() {
         <div className="rounded-md border bg-background px-3 py-2 font-mono text-sm break-all">
           {result || <span className="text-muted-foreground">…</span>}
         </div>
+      </ToolPane>
+
+      <ToolPane
+        title="Break it with frequency analysis"
+        description="No key needed — score every shift against English letter frequencies."
+        actions={
+          bestGuess ? (
+            <Button size="sm" onClick={applyGuess}>
+              <Wand2 className="size-4" /> Auto-solve
+            </Button>
+          ) : null
+        }
+      >
+        {ranked.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Enter some ciphertext with letters to analyse.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            <FrequencyChart text={text} />
+            <div>
+              <p className="mb-2 text-xs text-muted-foreground">
+                Top candidates by chi-squared score (lower = more English-like):
+              </p>
+              <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
+                {ranked.slice(0, 6).map((cand, i) => {
+                  const preview = caesar(text, cand.shift, 'decrypt').slice(0, 28)
+                  return (
+                    <button
+                      key={cand.shift}
+                      type="button"
+                      onClick={() => {
+                        setMode('decrypt')
+                        setShiftStr(String(cand.shift))
+                      }}
+                      className={cn(
+                        'rounded-md border px-2.5 py-1.5 text-left transition-colors hover:bg-accent',
+                        i === 0 ? 'border-success/50 bg-success/5' : 'bg-background',
+                      )}
+                    >
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="font-semibold text-primary">
+                          shift {cand.shift} (key {LETTERS[cand.shift]})
+                        </span>
+                        <span className="tabular-nums text-muted-foreground">
+                          χ²={cand.score.toFixed(1)}
+                        </span>
+                      </div>
+                      <div className="truncate font-mono text-[11px] text-foreground/80">
+                        {preview || '…'}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </ToolPane>
 
       {steps.length > 0 && (

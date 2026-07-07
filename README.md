@@ -1,73 +1,71 @@
-# React + TypeScript + Vite
+# CryptoCanvas
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A frontend-only sandbox for **seeing how cryptography actually works**. Encoding, hashing, and encryption tend to blur together when you only meet them as library calls — CryptoCanvas lets you run each one on your own input, step by step, including the moments where things *fail* (wrong key, tampered ciphertext, bad signature).
 
-Currently, two official plugins are available:
+Everything runs in the browser. No backend, no analytics, no telemetry.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+> ⚠️ **Educational use only.** This is not a security product and the code is not professionally audited. Browsers don't isolate keys the way HSMs do — **don't paste real secrets into it.**
 
-## React Compiler
+## Tools
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**Encoding** — Binary · ASCII · Hexadecimal · Base64 (standard & URL-safe) · Base32 · URL · HTML entities · Morse · ROT-N
 
-## Expanding the ESLint configuration
+**Time & Dates** — Time Converter (epoch ↔ ISO 8601 ↔ local, unit auto-detect, world clock) · UUID Inspector (version/variant decode, embedded v1/v7 timestamps, v4/v7 generation)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+**Classical Ciphers** — Caesar (with alphabet wheel + frequency-analysis auto-solver) · Vigenère (with Kasiski/Friedman key recovery) · XOR
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+**Hashing** — Hash (MD5, SHA-1/256/384/512, with an interactive avalanche demo) · HMAC · Password Hashing (PBKDF2 & scrypt with a live work-factor timer)
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+**Symmetric** — AES-GCM & AES-CBC (128/192/256) with round visualization and tamper panel
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+**Asymmetric** — RSA (OAEP encrypt/decrypt, PSS sign/verify, plus a "toy numbers" panel showing the real modular arithmetic) · ECDSA (P-256) · Diffie–Hellman key-exchange walkthrough
+
+**Tokens** — JWT · JWS · JWE · Nested JWT (sign-then-encrypt)
+
+**Generators** — Symmetric keys, keypairs, and secure passwords
+
+## Features
+
+- **Command palette** — press <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>K</kbd> to fuzzy-search and jump to any tool.
+- **Shareable URLs** — tool inputs are encoded in the query string; hit "Copy link" to share a specific example.
+- **Format auto-detect** — paste something and CryptoCanvas suggests the right tool for it (UUID, JWT, epoch, hex, Base64, and more), carrying your input along.
+- **Live feedback** — a green pulse on a verified signature or successful decryption, a red shake on tampering or a wrong key.
+- **How-it-works explainers** and step-by-step animations on every tool.
+
+## What runs where
+
+- **Web Crypto API** — AES, RSA, ECDSA, SHA-\*, HMAC, PBKDF2
+- [`jose`](https://github.com/panva/jose) — JWT / JWS / JWE
+- [`@noble/*`](https://github.com/paulmillr/noble-hashes) — MD5, scrypt, and other primitives the platform doesn't expose
+
+## Tech stack
+
+React 19 · TypeScript · Vite · Tailwind CSS v4 · Radix UI · Motion · React Router (hash routing, so it deploys to any static host).
+
+## Development
+
+```bash
+npm install
+npm run dev        # start the dev server
+npm run build      # typecheck + production build
+npm run test       # run the test suite (Vitest)
+npm run lint       # ESLint
+npm run format     # Prettier
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Project structure
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+src/
+  lib/           Pure crypto/encoding logic (framework-agnostic, fully unit-tested)
+  components/
+    tools/       One component per tool, grouped by category
+    common/      Shared tool scaffolding (ToolShell, ToolPane, StepStrip, …)
+    layout/      Navbar, sidebar, command palette, theme
+    ui/          Radix-based primitives
+  data/tools.ts  The tool registry that drives routing, sidebar, and search
+  pages/         Home, tool page (lazy-loaded), about, 404
+  tests/         Vitest specs mirroring src/lib
+```
+
+Each tool's logic lives in `src/lib/` as pure functions with their own tests, so the UI layer stays thin and the crypto stays verifiable.

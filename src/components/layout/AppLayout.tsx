@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
+import { CommandPalette } from '@/components/common/CommandPalette'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { DisclaimerBanner } from './DisclaimerBanner'
 import { Footer } from './Footer'
@@ -26,11 +27,24 @@ function AnimatedOutlet() {
 
 export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [paletteOpen, setPaletteOpen] = useState(false)
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setPaletteOpen((o) => !o)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   return (
     <TooltipProvider>
       <div className="flex min-h-svh flex-col">
         <DisclaimerBanner />
-        <Navbar onMenu={() => setSidebarOpen((s) => !s)} />
+        <Navbar onMenu={() => setSidebarOpen((s) => !s)} onSearch={() => setPaletteOpen(true)} />
         <div className="mx-auto flex w-full max-w-7xl flex-1">
           <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
           <main className="flex min-w-0 flex-1 flex-col">
@@ -39,6 +53,7 @@ export function AppLayout() {
         </div>
         <Footer />
       </div>
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </TooltipProvider>
   )
 }

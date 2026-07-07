@@ -1,6 +1,8 @@
 import {
   Binary,
+  Clock3,
   Code2,
+  Braces,
   Crown,
   FileKey,
   FileType,
@@ -9,17 +11,20 @@ import {
   Hash,
   Key,
   KeyRound,
+  KeySquare,
   Layers,
   Lock,
   RadioTower,
   RotateCw,
   Shield,
   Sparkles,
+  Users,
   type LucideIcon,
 } from 'lucide-react'
 
 export type ToolCategory =
   | 'encoders'
+  | 'time'
   | 'ciphers'
   | 'hashing'
   | 'symmetric'
@@ -38,6 +43,7 @@ export type Tool = {
 
 export const categoryOrder: ToolCategory[] = [
   'encoders',
+  'time',
   'ciphers',
   'hashing',
   'symmetric',
@@ -50,6 +56,10 @@ export const categories: Record<ToolCategory, { label: string; description: stri
   encoders: {
     label: 'Encoding',
     description: 'Convert text between common representations',
+  },
+  time: {
+    label: 'Time & Dates',
+    description: 'Epoch timestamps and date formats',
   },
   ciphers: {
     label: 'Classical Ciphers',
@@ -151,6 +161,23 @@ export const tools: Tool[] = [
     category: 'encoders',
     icon: RotateCw,
   },
+  // time
+  {
+    id: 'time',
+    route: '/tools/time',
+    title: 'Time Converter',
+    blurb: 'Epoch ↔ ISO 8601 ↔ local — with unit auto-detect and a world clock.',
+    category: 'time',
+    icon: Clock3,
+  },
+  {
+    id: 'uuid',
+    route: '/tools/uuid',
+    title: 'UUID Inspector',
+    blurb: 'Decode version, variant & embedded timestamps — and generate v4/v7.',
+    category: 'time',
+    icon: Braces,
+  },
   // ciphers
   {
     id: 'caesar',
@@ -193,6 +220,14 @@ export const tools: Tool[] = [
     category: 'hashing',
     icon: Shield,
   },
+  {
+    id: 'kdf',
+    route: '/tools/kdf',
+    title: 'Password Hashing',
+    blurb: 'PBKDF2 & scrypt with a live work-factor timer.',
+    category: 'hashing',
+    icon: KeySquare,
+  },
   // symmetric
   {
     id: 'aes',
@@ -218,6 +253,14 @@ export const tools: Tool[] = [
     blurb: 'P-256 sign and verify.',
     category: 'asymmetric',
     icon: FileKey,
+  },
+  {
+    id: 'dh',
+    route: '/tools/dh',
+    title: 'Diffie–Hellman',
+    blurb: 'Watch two parties derive a shared secret over a public channel.',
+    category: 'asymmetric',
+    icon: Users,
   },
   // tokens
   {

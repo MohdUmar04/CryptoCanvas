@@ -1,21 +1,26 @@
+import { Wand2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { CopyButton } from '@/components/common/CopyButton'
 import { StepStrip, type Step } from '@/components/common/StepStrip'
 import { ToolPane } from '@/components/common/ToolPane'
 import { ToolShell } from '@/components/common/ToolShell'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { getToolById } from '@/data/tools'
+import { useQueryState } from '@/hooks/useQueryState'
 import { vigenere, vigenereSteps } from '@/lib/ciphers/vigenere'
+import { crackVigenere, indexOfCoincidence } from '@/lib/ciphers/frequency'
+import { cn } from '@/lib/utils'
 
 const STEP_LIMIT = 60
 
 export function VigenereTool() {
   const tool = getToolById('vigenere')!
-  const [text, setText] = useState('ATTACK AT DAWN')
-  const [key, setKey] = useState('LEMON')
+  const [text, setText] = useQueryState('in', 'ATTACK AT DAWN')
+  const [key, setKey] = useQueryState('key', 'LEMON')
   const [mode, setMode] = useState<'encrypt' | 'decrypt'>('encrypt')
 
   const { result, error } = useMemo(() => {
@@ -34,6 +39,15 @@ export function VigenereTool() {
     }
   }, [text, key, mode])
 
+  const crack = useMemo(() => {
+    try {
+      return { result: crackVigenere(text), error: null as string | null }
+    } catch (e) {
+      return { result: null, error: e instanceof Error ? e.message : String(e) }
+    }
+  }, [text])
+  const ic = useMemo(() => indexOfCoincidence(text), [text])
+
   const stripSteps: Step[] = steps.map((s) => ({
     key: s.index,
     before: <span className="font-medium">{s.plain === ' ' ? '␣' : s.plain}</span>,
@@ -51,6 +65,7 @@ export function VigenereTool() {
   return (
     <ToolShell
       tool={tool}
+      shareable
       explanation={
         <>
           <p>
@@ -61,8 +76,9 @@ export function VigenereTool() {
           </p>
           <p>
             Famously dubbed <em>le chiffre indéchiffrable</em> for centuries — until Kasiski and
-            Babbage worked out how to detect the key length and break it. Still a great teaching
-            example of polyalphabetic substitution.
+            Babbage worked out how to break it. The <strong>index of coincidence</strong> reveals
+            the key length; then each key position becomes an independent Caesar cipher you can
+            crack with frequency analysis. The auto-solver below does exactly that.
           </p>
         </>
       }
@@ -101,6 +117,65 @@ export function VigenereTool() {
         ) : (
           <div className="rounded-md border bg-background px-3 py-2 font-mono text-sm break-all">
             {result || <span className="text-muted-foreground">…</span>}
+          </div>
+        )}
+      </ToolPane>
+
+      <ToolPane
+        title="Break it (Kasiski / Friedman)"
+        description="Estimate the key length from the index of coincidence, then solve each column."
+        actions={
+          crack.result ? (
+            <Button
+              size="sm"
+              onClick={() => {
+                setMode('decrypt')
+                setKey(crack.result.key)
+              }}
+            >
+              <Wand2 className="size-4" /> Auto-solve
+            </Button>
+          ) : null
+        }
+      >
+        <div className="mb-3 flex flex-wrap gap-2 text-[11px]">
+          <span className="rounded-md border bg-background px-2.5 py-1">
+            Index of coincidence:{' '}
+            <span className="font-mono tabular-nums text-primary">{ic.toFixed(4)}</span>
+          </span>
+          <span className="rounded-md border bg-background px-2.5 py-1 text-muted-foreground">
+            English ≈ 0.067 · random ≈ 0.038
+          </span>
+        </div>
+        {!crack.result ? (
+          <p className="text-sm text-muted-foreground">{crack.error}</p>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+              <span>
+                Recovered key:{' '}
+                <span className="font-mono font-semibold text-success">{crack.result.key}</span>
+              </span>
+              <span className="text-muted-foreground">(length {crack.result.keyLength})</span>
+            </div>
+            <div className="rounded-md border bg-background px-3 py-2 font-mono text-sm break-all">
+              {crack.result.plaintext}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {crack.result.keyLengthCandidates.slice(0, 8).map((c) => (
+                <span
+                  key={c.length}
+                  className={cn(
+                    'rounded border px-2 py-0.5 text-[11px] tabular-nums',
+                    c.length === crack.result.keyLength
+                      ? 'border-primary/50 bg-primary/5 text-primary'
+                      : 'text-muted-foreground',
+                  )}
+                >
+                  len {c.length}: {c.ic.toFixed(3)}
+                </span>
+              ))}
+            </div>
           </div>
         )}
       </ToolPane>

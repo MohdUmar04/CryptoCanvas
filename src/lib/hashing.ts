@@ -48,6 +48,15 @@ export async function hmac(
   return new Uint8Array(sig)
 }
 
+/** Flip one specific bit (bitIndex 0 = least significant) of one byte. */
+export function flipBit(bytes: Uint8Array, byteIndex: number, bitIndex: number): Uint8Array {
+  if (bytes.length === 0) return new Uint8Array([1 << (bitIndex & 7)])
+  const out = new Uint8Array(bytes)
+  const i = Math.min(Math.max(byteIndex, 0), out.length - 1)
+  out[i] ^= 1 << (bitIndex & 7)
+  return out
+}
+
 export function flipLastBit(bytes: Uint8Array): Uint8Array {
   if (bytes.length === 0) return new Uint8Array([1])
   const out = new Uint8Array(bytes)

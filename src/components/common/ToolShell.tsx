@@ -1,21 +1,32 @@
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Link2 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
 import * as React from 'react'
 import type { Tool } from '@/data/tools'
 import { Button } from '@/components/ui/button'
+import { useCopy } from '@/hooks/useCopy'
 import { cn } from '@/lib/utils'
 
 type Props = {
   tool: Tool
   explanation?: React.ReactNode
   headerExtras?: React.ReactNode
+  /** Show a "Copy link" button that shares the current URL (with query state). */
+  shareable?: boolean
   children: React.ReactNode
   className?: string
 }
 
-export function ToolShell({ tool, explanation, headerExtras, children, className }: Props) {
+export function ToolShell({
+  tool,
+  explanation,
+  headerExtras,
+  shareable = false,
+  children,
+  className,
+}: Props) {
   const [showExplanation, setShowExplanation] = useState(false)
+  const { copy } = useCopy()
   const Icon = tool.icon
   return (
     <div className={cn('px-4 py-6 sm:px-6 sm:py-8', className)}>
@@ -33,6 +44,16 @@ export function ToolShell({ tool, explanation, headerExtras, children, className
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {headerExtras}
+          {shareable && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void copy(window.location.href, 'Link copied')}
+            >
+              <Link2 className="size-4" />
+              Copy link
+            </Button>
+          )}
           {explanation && (
             <Button
               variant="outline"

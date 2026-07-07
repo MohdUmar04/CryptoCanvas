@@ -1,10 +1,13 @@
 import { ArrowDownUp } from 'lucide-react'
 import * as React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { CopyButton } from '@/components/common/CopyButton'
+import { FormatHint } from '@/components/common/FormatHint'
 import { ToolPane } from '@/components/common/ToolPane'
 import { ToolShell } from '@/components/common/ToolShell'
 import { Textarea } from '@/components/ui/textarea'
+import { useQueryState } from '@/hooks/useQueryState'
 import type { Tool } from '@/data/tools'
 import { cn } from '@/lib/utils'
 
@@ -46,7 +49,8 @@ export function EncoderTool({
   encodedRows = 4,
   decodedRows = 4,
 }: Props) {
-  const [text, setText] = useState('')
+  const [searchParams] = useSearchParams()
+  const [text, setText] = useQueryState('in')
   const [encoded, setEncoded] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [lastEdited, setLastEdited] = useState<'text' | 'encoded'>('text')
@@ -58,32 +62,61 @@ export function EncoderTool({
     decodeRef.current = decode
   })
 
-  const handleTextChange = useCallback((v: string) => {
-    setLastEdited('text')
-    setText(v)
+  // Seed both sides on mount from the URL: `in` = plain text, `enc` = encoded
+  // value (used when another tool hands off via the format-hint banner).
+  const seeded = useRef(false)
+  useEffect(() => {
+    if (seeded.current) return
+    seeded.current = true
+    const enc = searchParams.get('enc')
+    const plain = searchParams.get('in')
     try {
-      setEncoded(encodeRef.current(v))
+      if (plain !== null && plain !== '') {
+        setEncoded(encodeRef.current(plain))
+      } else if (enc !== null && enc !== '') {
+        setLastEdited('encoded')
+        setEncoded(enc)
+        setText(decodeRef.current(enc))
+      }
       setError(null)
     } catch (e) {
       setError(toMessage(e))
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const handleEncodedChange = useCallback((v: string) => {
-    setLastEdited('encoded')
-    setEncoded(v)
-    if (v.trim() === '') {
-      setText('')
-      setError(null)
-      return
-    }
-    try {
-      setText(decodeRef.current(v))
-      setError(null)
-    } catch (e) {
-      setError(toMessage(e))
-    }
-  }, [])
+  const handleTextChange = useCallback(
+    (v: string) => {
+      setLastEdited('text')
+      setText(v)
+      try {
+        setEncoded(encodeRef.current(v))
+        setError(null)
+      } catch (e) {
+        setError(toMessage(e))
+      }
+    },
+    [setText],
+  )
+
+  const handleEncodedChange = useCallback(
+    (v: string) => {
+      setLastEdited('encoded')
+      setEncoded(v)
+      if (v.trim() === '') {
+        setText('')
+        setError(null)
+        return
+      }
+      try {
+        setText(decodeRef.current(v))
+        setError(null)
+      } catch (e) {
+        setError(toMessage(e))
+      }
+    },
+    [setText],
+  )
 
   // When options change, recompute from whichever side was last edited
   useEffect(() => {
@@ -107,12 +140,14 @@ export function EncoderTool({
   }, [optionsKey])
 
   return (
-    <ToolShell tool={tool} explanation={explanation}>
+    <ToolShell tool={tool} explanation={explanation} shareable>
       {options && (
         <ToolPane title="Options" contentClassName="flex flex-wrap items-center gap-x-6 gap-y-3">
           {options}
         </ToolPane>
       )}
+
+      <FormatHint value={text} exclude={tool.id} />
 
       <ToolPane
         title={decodedLabel}
